@@ -1,0 +1,64 @@
+/*create the table with the right granularity and the right condition to make the analysis*/
+WITH tot AS
+(
+SELECT 
+DATE_PART(week,ilbo.day) AS week,
+warehouse,
+SUM(qty) AS qty
+
+FROM dl.inv_own ilbo
+
+WHERE ilbo.region_id = 'EU'
+AND ilbo.day IN (
+		  (TO_DATE(getdate(), 'YYYY/MM/DD')),
+          (TO_DATE(getdate(), 'YYYY/MM/DD'))-7,
+          (TO_DATE(getdate(), 'YYYY/MM/DD'))-14,
+          (TO_DATE(getdate(), 'YYYY/MM/DD'))-21,
+          (TO_DATE(getdate(), 'YYYY/MM/DD'))-28,
+          (TO_DATE(getdate(), 'YYYY/MM/DD'))-35,
+          (TO_DATE(getdate(), 'YYYY/MM/DD'))-42,
+          (TO_DATE(getdate(), 'YYYY/MM/DD'))-49,
+          (TO_DATE(getdate(), 'YYYY/MM/DD'))-56,
+
+		  )
+		  AND DATE_PART(year, ilbo.day) = '2022'
+AND ilbo.warehouse_id IN ('TR4', 'RED4','AEF2', 'ESA2')
+AND ilbo.conditiion ILIKE '%DAM%'
+AND ilbo.qty> 0
+GROUP BY 1,2
+)
+
+/*retun the variance between the values of day on day-1*/
+SELECT
+*
+FROM
+(
+	SELECT 
+	
+	a.week,
+	a.warehouse, 
+	ROUND((a.qty - b.previ) / a.qty,2) AS WoW_perc
+
+	FROM
+	tot a
+	LEFT JOIN
+	(
+
+		SELECT 
+		week, 
+		warehouse,
+		LEAD(qty) over (PARTITION BY warehouse ORDER BY week desc) AS previ 
+		FROM tot
+	) b
+	ON a.week = b.week AND a.warehouse = b.warehouse
+	WHERE WoW_perc is not null
+	ORDER BY warehouse, week desc
+) A
+
+/*pivoting the results*/
+PIVOT
+(
+	SUM(WoW_perc)
+	FOR warehouse IN (['TR4'], ['RED4'],['AEF2'],['ESA2'])
+) B
+ORDER BY week
