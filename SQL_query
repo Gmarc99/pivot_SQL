@@ -2,14 +2,14 @@
 WITH tot AS
 (
 SELECT 
-DATE_PART(week,ilbo.day) AS week,
+DATE_PART(week,ibow.day) AS week,
 warehouse,
 SUM(qty) AS qty
 
-FROM dl.inv_own ilbo
+FROM dl.inv_own ibow
 
-WHERE ilbo.region_id = 'EU'
-AND ilbo.day IN (
+WHERE ibow.region_id = 'EU'
+AND ibow.day IN (
 		  (TO_DATE(getdate(), 'YYYY/MM/DD')),
           (TO_DATE(getdate(), 'YYYY/MM/DD'))-7,
           (TO_DATE(getdate(), 'YYYY/MM/DD'))-14,
@@ -21,10 +21,10 @@ AND ilbo.day IN (
           (TO_DATE(getdate(), 'YYYY/MM/DD'))-56,
 
 		  )
-		  AND DATE_PART(year, ilbo.day) = '2022'
-AND ilbo.warehouse_id IN ('TR4', 'RED4','AEF2', 'ESA2')
-AND ilbo.conditiion ILIKE '%DAM%'
-AND ilbo.qty> 0
+		  AND DATE_PART(year, ibow.day) = '2022'
+AND ibow.warehouse_id IN ('TR4', 'RED4','AEF2', 'ESA2')
+AND ibow.conditiion ILIKE '%DAM%'
+AND ibow.qty> 0
 GROUP BY 1,2
 )
 
